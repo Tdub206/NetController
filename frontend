@@ -1,0 +1,188 @@
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, ScatterChart, Scatter } from 'recharts';
+import { Wifi, Radio, ZapOff, Activity, Target, AlertTriangle, Zap } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import _ from 'lodash';
+
+const EnhancedNetworkInterface = () => {
+  // Sophisticated state management
+  const [systemState, setSystemState] = useState({
+    interfaces: {
+      wlan0: { mode: 'managed', status: 'inactive', buffer: [] },
+      wlan1: { mode: 'managed', status: 'inactive', buffer: [] }
+    },
+    attackState: {
+      active: false,
+      targetedAPs: new Set(),
+      capturedHandshakes: new Map(),
+      injectionRate: 0
+    }
+  });
+
+  const [networkMetrics, setNetworkMetrics] = useState({
+    signalStrength: [],
+    channelUtilization: {},
+    responseLatency: [],
+    packetLoss: new Map()
+  });
+
+  // Optimized access point management
+  const [accessPoints, setAccessPoints] = useState([]);
+  const [selectedTargets, setSelectedTargets] = useState(new Set());
+  
+  // Advanced configuration state
+  const [advancedConfig, setAdvancedConfig] = useState({
+    injectionTiming: 'picosecond',
+    frameComplexity: 0.85,
+    channelHopping: true,
+    powerModulation: true,
+    burstRate: 1000
+  });
+
+  // Memoized vulnerability calculation
+  const calculateVulnerabilityScore = useCallback((ap) => {
+    const metrics = {
+      signalStrength: (ap.signalStrength + 100) / 100,
+      proximity: Math.min(1, 10 / ap.proximity),
+      encryption: ap.encryption === 'WPA2' ? 0.8 : 0.6,
+      clientDensity: ap.clients?.length || 0
+    };
+    
+    return Object.values(metrics).reduce((acc, val) => acc + val, 0) / 4;
+  }, []);
+
+  const vulnerableAPs = useMemo(() => 
+    accessPoints.map(ap => ({
+      ...ap,
+      vulnerabilityScore: calculateVulnerabilityScore(ap),
+      attackPriority: ap.proximity < 5 ? 'high' : 'medium'
+    }))
+  , [accessPoints, calculateVulnerabilityScore]);
+
+  // Enhanced scanning capabilities
+  const initiateNetworkScan = async () => {
+    try {
+      const results = await Promise.all(
+        Object.keys(systemState.interfaces).map(async (iface) => {
+          const response = await fetch(`/api/scan/${iface}`);
+          return response.json();
+        })
+      );
+
+      const mergedResults = _.uniqBy(results.flat(), 'bssid')
+        .map(ap => ({
+          ...ap,
+          proximityScore: calculateProximityScore(ap.signalStrength),
+          vulnerabilityIndex: calculateVulnerabilityScore(ap)
+        }));
+
+      setAccessPoints(mergedResults);
+    } catch (error) {
+      console.error('Advanced scan failed:', error);
+    }
+  };
+
+  // Sophisticated attack orchestration
+  const initiateCoordinatedAttack = async () => {
+    if (selectedTargets.size === 0) return;
+
+    const attackConfig = {
+      timing: advancedConfig.injectionTiming,
+      burstRate: advancedConfig.burstRate,
+      powerLevel: advancedConfig.powerModulation ? 'adaptive' : 'fixed',
+      channelStrategy: advancedConfig.channelHopping ? 'dynamic' : 'static'
+    };
+
+    try {
+      await fetch('/api/attack/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targets: Array.from(selectedTargets),
+          config: attackConfig
+        })
+      });
+
+      setSystemState(prev => ({
+        ...prev,
+        attackState: {
+          ...prev.attackState,
+          active: true,
+          startTime: Date.now()
+        }
+      }));
+
+      // Initialize metrics monitoring
+      startMetricsCollection();
+    } catch (error) {
+      console.error('Attack initialization failed:', error);
+    }
+  };
+
+  return (
+    <div className="p-6 bg-gray-900 text-white">
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-red-500">Advanced Network Controller</h1>
+          <div className="flex gap-4">
+            <button 
+              onClick={initiateNetworkScan}
+              className="px-4 py-2 bg-blue-600 rounded flex items-center gap-2"
+            >
+              <Wifi className="w-4 h-4" />
+              Advanced Scan
+            </button>
+            <button
+              onClick={initiateCoordinatedAttack}
+              disabled={selectedTargets.size === 0}
+              className={`px-4 py-2 rounded flex items-center gap-2 ${
+                systemState.attackState.active ? 'bg-red-600' : 'bg-gray-600'
+              }`}
+            >
+              <ZapOff className="w-4 h-4" />
+              Execute Attack
+            </button>
+          </div>
+        </div>
+
+        {/* Advanced configuration panel */}
+        <div className="grid grid-cols-2 gap-6">
+          <div className="border border-gray-700 rounded-lg p-4">
+            <h2 className="text-xl font-semibold mb-4">Advanced Configuration</h2>
+            <div className="space-y-4">
+              {/* Configuration controls */}
+            </div>
+          </div>
+
+          {/* Target analysis panel */}
+          <div className="border border-gray-700 rounded-lg p-4">
+            <h2 className="text-xl font-semibold mb-4">Target Analysis</h2>
+            <div className="space-y-2">
+              {vulnerableAPs.map(ap => (
+                <div key={ap.bssid} className="flex items-center justify-between p-2 hover:bg-gray-800 rounded">
+                  {/* Access point details */}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Metrics visualization */}
+        <div className="border border-gray-700 rounded-lg p-4">
+          <h2 className="text-xl font-semibold mb-4">Attack Metrics</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={networkMetrics.signalStrength}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+              <XAxis dataKey="timestamp" stroke="#666" />
+              <YAxis stroke="#666" />
+              <Tooltip />
+              <Line type="monotone" dataKey="strength" stroke="#ff4444" dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default EnhancedNetworkInterface;
