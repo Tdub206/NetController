@@ -1,0 +1,4 @@
+# Update and install required dependencies
+sudo apt update
+sudo apt install -y python3-pip python3-dev libpcap-dev aircrack-ng
+pip3 install flask scapy pandas numpy
